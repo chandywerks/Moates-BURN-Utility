@@ -12,7 +12,7 @@ int config(char *device)
 {
 	int fd;
 	// Open serial device /dev/ttyUSB0 with R+W, no control over the terminal, and non-blocking I/O
-	if((fd = open(device, O_RDWR | O_NOCTTY)) == -1)
+	if((fd = open(device, O_RDWR | O_NOCTTY))<0)
 	{
 		fprintf(stderr,"Unable to open device %s. Perhaps you are not a member of the dialout group?\n",device);
 		return -1;
@@ -23,7 +23,7 @@ int config(char *device)
 	struct termios settings;
 	speed_t speed;
 
-	if(tcgetattr(fd, &settings)==-1)
+	if(tcgetattr(fd, &settings)<0)
 	{
 		fprintf(stderr,"Unable to get attibutes for %s. Is this a serial device?\n",device);
 		return -1;
@@ -44,20 +44,99 @@ int config(char *device)
 	cfsetispeed(&settings, B921600);
 	cfsetospeed(&settings, B921600);
 	// Apply settings
-	if(tcsetattr(fd, TCSAFLUSH, &settings)==-1)	// Flush data currently on port buffer and apply
+	if(tcsetattr(fd, TCSAFLUSH, &settings)<0)	// Flush data currently on port buffer and apply
 	{
 		fprintf(stderr,"Unable to configure %s",device);
 		return -1;
 	}
 	return fd;
 }
-
+int read_prom(int fd, char *chip, char *file)
+{
+	return 0;
+}
+int write_prom(int fd, char *chip, char *file)
+{
+	return 0;
+}
+int erase_prom(int fd, char *chip)
+{
+	return 0;
+}
+void help()
+{
+	printf("\nDriver for the Moates BURN EEPROM burner.\n\nArguments\n\t-d FILE\n\t\tSpecify a device file, defaults to /dev/ttyUSB0\n\n\t-c WORD\n\t\tSpecify the chip type, supported ships are...\n\t\t\t- SST27SF512\n\t\t\t- AT29C256\n\t\t\t- AM29F040\n\t\t\t- 2732A \t(Read-Only)\n\n\t-r FILE\n\t\tSpecify a file to dump EEPROM data to\n\n\t-w FILE\n\t\tSpecify a file to write to the EEPROM\n\n\t-e\n\t\tErase contents of the EEPROM\n");
+}
 int main(int argc, char *argv[])
 {
-	char *device = "/dev/ttyUSB0";
-	int fd;
-	if((fd=config(device))==-1) return 1;
+	int fd;		// File descriptor
+	int c;
+	int rflag = 0;
+	int wflag = 0;
+	int eflag = 0;
+	char *chip = NULL;
+	char *device_file = NULL;
+	char *read_file = NULL;
+	char *write_file = NULL;
 
+	// Get args
+	while((c = getopt(argc,argv,"d:c:r:w:e")) != -1)
+	{
+		switch(c)
+		{
+			case 'd':
+				device_file = optarg;
+				break;
+			case 'c':
+				chip = optarg;
+				break;
+			case 'r':
+				read_file = optarg;
+				rflag = 1;
+				break;
+			case 'w':
+				write_file = optarg;
+				wflag = 1;
+				break;
+			case 'e':
+				eflag = 1;
+				break;
+			case '?':
+			 	return 1;
+		}
+	}
+	if(device_file == NULL)
+		device_file = "/dev/ttyUSB0";
+	if(chip == NULL)
+	{
+		printf("You must specify a chip type.\n");
+		help();
+		return 1;	
+	}
+	if(!(!strcmp(chip,"SST27SF512")||!strcmp(chip,"AT29C256")||!strcmp(chip,"AM29F040")||!strcmp(chip,"2732A")))
+	{
+		printf("Invalid chip type specified.\n");
+		help();
+		return 1;
+	}
+
+	// Configure the serial port and perform requested action
+	if((fd=config(device_file))==-1) return 1;
+
+	if(rflag)
+		return read_prom(fd,chip,read_file);
+	else if(wflag)
+		return write_prom(fd,chip,write_file);
+	else if(eflag)
+		return erase_prom(fd,chip);
+	else
+	{
+		printf("No action specified.\n");
+		help();
+		return 1;
+	}
+}
+/*
 	// Testing it out...
 	// Sending 'VV' to the device to request its version number
 	// It should respond with 3 bytes of data
@@ -88,5 +167,5 @@ int main(int argc, char *argv[])
 	printf("\n");
 	close(fd);
 
-	return 0;	
-}
+	return 0;
+*/
