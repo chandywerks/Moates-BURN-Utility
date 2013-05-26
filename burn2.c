@@ -12,7 +12,7 @@ int config(char *device)
 {
 	int fd;
 	// Open serial device /dev/ttyUSB0 with R+W, no control over the terminal, and non-blocking I/O
-	if((fd = open(device, O_RDWR | O_NOCTTY | O_NDELAY)) == -1)
+	if((fd = open(device, O_RDWR | O_NOCTTY)) == -1)
 	{
 		fprintf(stderr,"Unable to open device %s. Perhaps you are not a member of the dialout group?\n",device);
 		return -1;
@@ -74,7 +74,12 @@ int main(int argc, char *argv[])
 	n_written = write(fd,cmd,n);
 	printf("We wrote %d bytes\n",n_written);
 
-	while((n_read=read(fd,buffer,r))>0){}
+	if((n_read=read(fd,buffer,r))<0)
+	{
+		printf("Error reading from the device\n");
+		return 1;
+	}
+	
 	printf("We read %d bytes back\n\n",n_read);
 
 	for(i=0;i<r;i++)
