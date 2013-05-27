@@ -2,12 +2,88 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
 // Linux drivers for the Moates BURN I and II EEPROM burner.
 // Chris Handwerker - chris.handwerker@gmail.com
 // www.homebrewtechnology.org
 
+const char *p_name;
 
+void help(char *errmsg, ...)
+{
+	va_list va;
+	va_start(va, errmsg);
+	vprintf(errmsg, va);
+	va_end(va);
+	printf("\n\nDriver for the Moates BURN EEPROM burner.\nArguments\n\t-d FILE\n\t\tSpecify a device file, defaults to /dev/ttyUSB0\n\n\t-c WORD\n\t\tSpecify the chip type, supported ships are...\n\t\t\t- SST27SF512\n\t\t\t- AT29C256\n\t\t\t- AM29F040\n\t\t\t- 2732A \t(Read-Only)\n\n\t-r FILE\n\t\tSpecify a file to dump EEPROM data to\n\n\t-w FILE\n\t\tSpecify a file to write to the EEPROM\n\n\t-e\n\t\tErase contents of the EEPROM\n");
+	exit(0);
+}
+void die(char *errmsg, ...)
+{
+	fprintf(stderr, "%s: ", p_name);
+	va_list va;
+	va_start(va, errmsg);
+	vfprintf(stderr, errmsg, va);
+	va_end(va);
+	fprintf(stderr,"\n");
+	exit(1);
+}
+char * send(int fd, char *cmd, int n_write, int n_read)
+{
+	// Sends a command and returns response data
+	char *response=malloc(sizeof(char)*n_read);
+	char new_cmd[n_write+1];
+	char sum=0;
+	int i;
+	
+	for(i=0;i<n_write;i++)
+	{
+		new_cmd[i]=cmd[i];
+		sum+=cmd[i];
+	}
+	new_cmd[n_write++]=sum;
+
+	if(write(fd,new_cmd,n_write) != n_write)		// Send command
+		die("Error writing to the device.");
+	if(read(fd,response,n_read) != n_read)
+		die("Error reading response from device");
+	return response;
+}
+
+int read_prom(int fd, int chip_id, char *file)
+{
+	return 0;
+}
+int write_prom(int fd, int chip_id, char *file)
+{
+	return 0;
+}
+int erase_prom(int fd, int chip_id)
+{
+	char *cmd;
+	char *ret;
+
+	switch(chip_id)
+	{
+		case 0:
+			cmd=malloc(sizeof(char)*2);
+			ret=malloc(sizeof(char)*1);
+			cmd = "\x35\x45";
+			ret = send(fd, cmd, 2, 1);
+			if(ret[0]=='O')
+				return 0;
+			else
+				return 1;
+		case 1:
+			return 0;
+		case 2:
+			return 0;
+		case 3:
+			return 0;
+	}
+}
 int config(char *device)
 {
 	int fd;
@@ -51,26 +127,12 @@ int config(char *device)
 	}
 	return fd;
 }
-int read_prom(int fd, char *chip, char *file)
-{
-	return 0;
-}
-int write_prom(int fd, char *chip, char *file)
-{
-	return 0;
-}
-int erase_prom(int fd, char *chip)
-{
-	return 0;
-}
-void help()
-{
-	printf("\nDriver for the Moates BURN EEPROM burner.\n\nArguments\n\t-d FILE\n\t\tSpecify a device file, defaults to /dev/ttyUSB0\n\n\t-c WORD\n\t\tSpecify the chip type, supported ships are...\n\t\t\t- SST27SF512\n\t\t\t- AT29C256\n\t\t\t- AM29F040\n\t\t\t- 2732A \t(Read-Only)\n\n\t-r FILE\n\t\tSpecify a file to dump EEPROM data to\n\n\t-w FILE\n\t\tSpecify a file to write to the EEPROM\n\n\t-e\n\t\tErase contents of the EEPROM\n");
-}
 int main(int argc, char *argv[])
 {
+	p_name=argv[0];
 	int fd;		// File descriptor
 	int c;
+	int chip_id;
 	int rflag = 0;
 	int wflag = 0;
 	int eflag = 0;
@@ -108,64 +170,44 @@ int main(int argc, char *argv[])
 	if(device_file == NULL)
 		device_file = "/dev/ttyUSB0";
 	if(chip == NULL)
-	{
-		printf("You must specify a chip type.\n");
-		help();
-		return 1;	
-	}
-	if(!(!strcmp(chip,"SST27SF512")||!strcmp(chip,"AT29C256")||!strcmp(chip,"AM29F040")||!strcmp(chip,"2732A")))
-	{
-		printf("Invalid chip type specified.\n");
-		help();
-		return 1;
-	}
+		help("You must specify a chip type.");
+
+	if(!strcmp(chip,"SST27SF512"))
+		chip_id=0;
+	else if(!strcmp(chip,"AT29C256"))
+		chip_id=1;
+	else if(!strcmp(chip,"AM29F040"))
+		chip_id=2;
+	else if(!strcmp(chip,"2732A"))
+		chip_id=3;
+	else	
+		help("Invalid chip type: %s",chip);
 
 	// Configure the serial port and perform requested action
 	if((fd=config(device_file))==-1) return 1;
 
 	if(rflag)
-		return read_prom(fd,chip,read_file);
+	{
+		if(read_prom(fd,chip_id,read_file)>0)
+			die("Error reading from device.");
+		else
+			printf("Sucessfully read from the chip!\n");
+	}
 	else if(wflag)
-		return write_prom(fd,chip,write_file);
+	{
+		if(write_prom(fd,chip_id,write_file)>0)
+			die("Error writing to device.");
+		else
+			printf("Sucessfully wrote to the chip!\n");
+	}
 	else if(eflag)
-		return erase_prom(fd,chip);
+	{
+		if(erase_prom(fd,chip_id)>0)
+			die("Error erasing device."); 
+		else
+			printf("Sucessfully erased the chip!\n");
+	}
 	else
-	{
-		printf("No action specified.\n");
-		help();
-		return 1;
-	}
-}
-/*
-	// Testing it out...
-	// Sending 'VV' to the device to request its version number
-	// It should respond with 3 bytes of data
-	char *cmd = "\x56\x56";
-	int n=2;	// num bytes to send
-	int r=3;	// num bytes we get back
-
-	int i;
-	char buffer[r];
-
-	int n_written;
-	int n_read;
-
-	n_written = write(fd,cmd,n);
-	printf("We wrote %d bytes\n",n_written);
-
-	if((n_read=read(fd,buffer,r))<0)
-	{
-		printf("Error reading from the device\n");
-		return 1;
-	}
-	
-	printf("We read %d bytes back\n\n",n_read);
-
-	for(i=0;i<r;i++)
-		printf("0x%hhx ",buffer[i]);
-
-	printf("\n");
-	close(fd);
-
+		help("No action specified.\n");
 	return 0;
-*/
+}
