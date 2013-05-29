@@ -58,30 +58,84 @@ int read_prom(int fd, int chip_id, char *file)
 }
 int write_prom(int fd, int chip_id, char *file)
 {
+	int chip_size;
+	int address=0;	// Starting address
+	int offset;		// cmd data offset
+	int c;			// Character to read from file
+	int i;
+	char n;			// n bytes to write
+	char *buf;		// Buffer for reading file in
+	char *cmd;		// Command string
+	char *adr;		// Address string
+	char *ret;		// Pointer to return string
+	
+	FILE *fp;
+	fp=fopen(file,"w+");
+	if(fp==0)
+		die("Unable to read from file: %s\n",file);
+	buf=malloc(sizeof(char)*256);
+
+	if(erase_prom(fd,chip_id)>0)
+		return 1;
+	switch(chip_id)
+	{
+		case 0:		// SST27SF512
+			// Erase chip
+			offset=5;
+			chip_size=0xFFFF;
+			while(address<=chip_size)
+			{
+				// loop at read in at most 256 bytes or until EOF from file
+				for(n=0;n<256 && (c=fgetc(fp)!=EOF);n++)
+					buf[n]=(char)c;
+				if(n==0) break;
+				cmd=malloc(sizeof(char)*(offset+n));
+
+//TODO write address to string function
+
+				//addr=addr_string(address,2);		// 2 bytes for address
+
+				for(i=offset;i<=n;i++)	// Write data string from buffer
+					cmd[i]=buf[i];
+				// Generate command string
+				cmd="5W";
+				cmd[2]=(n==256)?0:n;			// n bytes to write (0 for 256)
+				//cmd[3]=addr[0];				// MSB
+				//cmd[4]=addr[1];				// LSB
+				if(send(fd,cmd,n,1)[0]!='O')	// write data to EEPROM
+					return 1;				
+				address+=n;					// increment address
+				if(c==EOF) break;
+			}
+			fclose(fp);
+			return 0;
+		default:
+			return 1;
+	}
 	return 0;
 }
 int erase_prom(int fd, int chip_id)
 {
 	char *cmd;
 	char *ret;
+	int i;
 
 	switch(chip_id)
 	{
-		case 0:
+		case 0:		// SST27SF512
 			cmd=malloc(sizeof(char)*2);
 			ret=malloc(sizeof(char)*1);
 			cmd = "\x35\x45";
-			ret = send(fd, cmd, 2, 1);
-			if(ret[0]=='O')
-				return 0;
-			else
-				return 1;
-		case 1:
+			return (*send(fd,cmd,2,1))=='O'?0:1;
+		case 1:		// AT29C256
 			return 0;
-		case 2:
+		case 2:		// AM29F040
 			return 0;
-		case 3:
-			return 0;
+		case 3:		// 2732A
+			printf("Read only support for the 2732A.\n");
+			return 1;
+		default:
+			return 1;
 	}
 }
 int config(char *device)
@@ -142,7 +196,7 @@ int main(int argc, char *argv[])
 	char *write_file = NULL;
 
 	// Get args
-	while((c = getopt(argc,argv,"d:c:r:w:e")) != -1)
+	while((c = getopt(argc, argv, "d:c:r:w:e")) != -1)
 	{
 		switch(c)
 		{
@@ -188,21 +242,21 @@ int main(int argc, char *argv[])
 
 	if(rflag)
 	{
-		if(read_prom(fd,chip_id,read_file)>0)
+		if(read_prom(fd, chip_id, read_file)>0)
 			die("Error reading from device.");
 		else
 			printf("Sucessfully read from the chip!\n");
 	}
 	else if(wflag)
 	{
-		if(write_prom(fd,chip_id,write_file)>0)
+		if(write_prom(fd, chip_id, write_file)>0)
 			die("Error writing to device.");
 		else
 			printf("Sucessfully wrote to the chip!\n");
 	}
 	else if(eflag)
 	{
-		if(erase_prom(fd,chip_id)>0)
+		if(erase_prom(fd, chip_id)>0)
 			die("Error erasing device."); 
 		else
 			printf("Sucessfully erased the chip!\n");
