@@ -30,6 +30,17 @@ void die(char *errmsg, ...)
 	fprintf(stderr,"\n");
 	exit(1);
 }
+char * addrstr(int address, int n)
+{
+	char *str=malloc(sizeof(char)*n);
+	int i;
+	for(i=0;i<n;i++)
+	{
+		str[n-i-1]=address&0xFF;
+		address>>=8;
+	}	
+	return str;
+}
 char * send(int fd, char *cmd, int n_write, int n_read)
 {
 	// Sends a command and returns response data
@@ -58,60 +69,57 @@ int read_prom(int fd, int chip_id, char *file)
 }
 int write_prom(int fd, int chip_id, char *file)
 {
+	// TODO at the moment this only works for burning an SST 27SF512
+	// we need to put chip data, like size and header command / length, 
+	// in a data structure and refrence that instead so this process will work
+	// for any given chip.
+
 	int chip_size;
 	int address=0;	// Starting address
 	int offset;		// cmd data offset
-	int c;			// Character to read from file
-	int i;
-	char n;			// n bytes to write
+	int i;			// bytes to read and general purpose counter
+	int n;			// n bytes to write
 	char *buf;		// Buffer for reading file in
 	char *cmd;		// Command string
 	char *adr;		// Address string
 	char *ret;		// Pointer to return string
 	
 	FILE *fp;
-	fp=fopen(file,"w+");
-	if(fp==0)
+	fp=fopen(file,"r");
+	if(fp==NULL)
 		die("Unable to read from file: %s\n",file);
 	buf=malloc(sizeof(char)*256);
 
+	// Erase chip
 	if(erase_prom(fd,chip_id)>0)
 		return 1;
-	switch(chip_id)
+	offset=5;
+	chip_size=0xFFFF;
+
+	while(address<=chip_size)
 	{
-		case 0:		// SST27SF512
-			// Erase chip
-			offset=5;
-			chip_size=0xFFFF;
-			while(address<=chip_size)
-			{
-				// loop at read in at most 256 bytes or until EOF from file
-				for(n=0;n<256 && (c=fgetc(fp)!=EOF);n++)
-					buf[n]=(char)c;
-				if(n==0) break;
-				cmd=malloc(sizeof(char)*(offset+n));
+		i=chip_size-address>=256?256:chip_size-address;	// n bytes to read
+		// Read at most 256 bytes or until EOF from file
+		if((n=fread(buf,sizeof(char),i,fp))==0)
+			break;
 
-//TODO write address to string function
+		cmd=malloc(sizeof(char)*(offset+n));
+		adr=addrstr(address,2);			// 2 bytes for address
 
-				//addr=addr_string(address,2);		// 2 bytes for address
+		for(i=offset;i<n+offset;i++)	// Write data string from buffer
+			cmd[i]=buf[i-offset];
+		// Generate command string
+		cmd[0]='5';
+		cmd[1]='W';
+		cmd[2]=(n==256)?0:n;		// n bytes to write (0 for 256)
+		cmd[3]=adr[1];				// MSB
+		cmd[4]=adr[0];				// LSB
 
-				for(i=offset;i<=n;i++)	// Write data string from buffer
-					cmd[i]=buf[i];
-				// Generate command string
-				cmd="5W";
-				cmd[2]=(n==256)?0:n;			// n bytes to write (0 for 256)
-				//cmd[3]=addr[0];				// MSB
-				//cmd[4]=addr[1];				// LSB
-				if(send(fd,cmd,n,1)[0]!='O')	// write data to EEPROM
-					return 1;				
-				address+=n;					// increment address
-				if(c==EOF) break;
-			}
-			fclose(fp);
-			return 0;
-		default:
-			return 1;
+		if(*send(fd,cmd,offset+n,1)!='O')	// write data to EEPROM
+			return 1;				
+		address+=n;					// increment address
 	}
+	fclose(fp);
 	return 0;
 }
 int erase_prom(int fd, int chip_id)
