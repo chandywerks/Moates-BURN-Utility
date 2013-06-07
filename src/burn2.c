@@ -1,3 +1,13 @@
+/*
+burn2
+
+Chris Handwerker (2013) <chris.handwerker@gmail.com>
+http://homebrewtechnology.org
+
+Linux drivers for the Moates BURN II EEPROM burner. 
+*/
+
+
 #include <stdio.h>
 #include <stdarg.h>
 
