@@ -21,7 +21,23 @@ void help(char *errmsg, ...)
 	va_start(va, errmsg);
 	vprintf(errmsg, va);
 	va_end(va);
-	printf("\n\nDriver for the Moates BURN EEPROM burner.\nArguments\n\t-d FILE\n\t\tSpecify a device file, defaults to /dev/ttyUSB0\n\n\t-c WORD\n\t\tSpecify the chip type, supported ships are...\n\t\t\t- SST27SF512\n\t\t\t- AT29C256\n\t\t\t- AM29F040\n\t\t\t- 2732A \t(Read-Only)\n\n\t-r FILE\n\t\tSpecify a file to dump EEPROM data to\n\n\t-w FILE\n\t\tSpecify a file to write to the EEPROM\n\n\t-e\n\t\tErase contents of the EEPROM\n");
+	printf
+	(
+		"\n\nDriver for the Moates BURN EEPROM burner.\n"
+		"Arguments\n"
+		"\t-d FILE\n\t\tSpecify a device file, defaults to /dev/ttyUSB0\n\n"
+		"\t-c WORD\n\t\tSpecify the chip type, supported ships are...\n"
+		"\t\t\t- SST27SF512\n"
+		"\t\t\t- AT29C256\n"
+		"\t\t\t- AM29F040\n"
+		"\t\t\t- 2732A \t(Read-Only)\n\n"
+		"\t-r FILE\n"
+		"\t\tSpecify a file to dump EEPROM data to\n\n"
+		"\t-w FILE\n"
+		"\t\tSpecify a file to write to the EEPROM\n\n"
+		"\t-e\n\t\t"
+		"Erase contents of the EEPROM\n"
+	);
 	exit(0);
 }
 void die(char *errmsg, ...)
