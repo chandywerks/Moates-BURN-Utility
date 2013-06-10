@@ -15,10 +15,11 @@ supported by the BURNII.
 #include <stdlib.h>
 
 #include "burnio.h"
+#include "chipdata.h"
 
-extern int read_prom(int fd, int chip_id, char *file);
-extern int write_prom(int fd, int chip_id, char *file);
-extern int erase_prom(int fd, int chip_id);
+extern int read_prom(int fd, Chip *chip, char *file);
+extern int write_prom(int fd, Chip *chip, char *file);
+extern int erase_prom(int fd, Chip *chip);
 
 static char * addrstr(int address, int n);
 

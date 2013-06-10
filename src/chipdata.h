@@ -17,6 +17,7 @@ as chip size and command headers.
 typedef struct
 {
 	int size;
+	int naddr;		// Bytes of address
 	char rcmd[2];	// Read command header
 	char wcmd[2];	// Write command header
 	char ecmd[2];	// Erase command header

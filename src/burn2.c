@@ -12,6 +12,7 @@ Linux drivers for the Moates BURN II EEPROM burner.
 #include <stdarg.h>
 
 #include "promio.h"
+#include "chipdata.h"
 
 const char *p_name;
 
@@ -55,14 +56,14 @@ int main(int argc, char *argv[])
 	p_name=argv[0];
 	int fd;	// File descriptor
 	int c;
-	int chip_id;
 	int rflag = 0;
 	int wflag = 0;
 	int eflag = 0;
-	char *chip = NULL;
+	char *chipstr = NULL;
 	char *device_file = NULL;
 	char *read_file = NULL;
 	char *write_file = NULL;
+	Chip *chip = NULL;		// chipdata struct
 
 	// Get args
 	while((c = getopt(argc, argv, "d:c:r:w:e")) != -1)
@@ -73,7 +74,7 @@ int main(int argc, char *argv[])
 				device_file = optarg;
 				break;
 			case 'c':
-				chip = optarg;
+				chipstr = optarg;
 				break;
 			case 'r':
 				read_file = optarg;
@@ -92,40 +93,31 @@ int main(int argc, char *argv[])
 	}
 	if(device_file == NULL)
 		device_file = "/dev/ttyUSB0";
-	if(chip == NULL)
+	if(chipstr == NULL)
 		help("You must specify a chip type.");
-
-	if(!strcmp(chip,"SST27SF512"))
-		chip_id=0;
-	else if(!strcmp(chip,"AT29C256"))
-		chip_id=1;
-	else if(!strcmp(chip,"AM29F040"))
-		chip_id=2;
-	else if(!strcmp(chip,"2732A"))
-		chip_id=3;
-	else	
-		help("Invalid chip type: %s",chip);
-
+	if((chip=chip_select(chipstr))==NULL)
+		die("Invalid chip type '%s'",chipstr);
+	
 	// Configure the serial port and perform requested action
 	if((fd=config(device_file))==-1) return 1;
 
 	if(rflag)
 	{
-		if(read_prom(fd, chip_id, read_file)>0)
+		if(read_prom(fd, chip, read_file)>0)
 			die("Error reading from device.");
 		else
 			printf("Sucessfully read from the chip!\n");
 	}
 	else if(wflag)
 	{
-		if(write_prom(fd, chip_id, write_file)>0)
+		if(write_prom(fd, chip, write_file)>0)
 			die("Error writing to device.");
 		else
 			printf("Sucessfully wrote to the chip!\n");
 	}
 	else if(eflag)
 	{
-		if(erase_prom(fd, chip_id)>0)
+		if(erase_prom(fd, chip)>0)
 			die("Error erasing device.");
 		else
 			printf("Sucessfully erased the chip!\n");

@@ -13,6 +13,7 @@ as chip size and command headers.
 Chip SST27SF512 = (Chip)
 {
 	0xFFFF,
+	2,
 	"5R",
 	"5W",
 	"5E"
@@ -21,6 +22,7 @@ Chip SST27SF512 = (Chip)
 Chip AT29C256 = (Chip)
 {
 	0x7FFF,
+	2,
 	"2R",
 	"2W",
 	"2E"
@@ -29,6 +31,7 @@ Chip AT29C256 = (Chip)
 Chip AM29F040 = (Chip)
 {
 	0x7FFFF,
+	3,
 	"4R",
 	"4W",
 	"4E"
@@ -37,6 +40,7 @@ Chip AM29F040 = (Chip)
 Chip _2732A = (Chip)
 {
 	0xFFF,
+	2,
 	"3R",
 	"\0",
 	"\0"
