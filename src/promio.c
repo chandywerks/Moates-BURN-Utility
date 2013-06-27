@@ -36,10 +36,6 @@ int write_prom(int fd, Chip *chip, char *file)
 		die("Unable to read from file: %s\n",file);
 	buf=malloc(sizeof(char)*256);
 
-	// Erase chip
-	// TODO - Only do this if e flag is set
-	if(erase_prom(fd,chip)>0)
-		return 1;
 	offset=3+chip->naddr;	// Command header + n bytes for address
 
 	// TODO - allow user to specify an address range to write to
@@ -61,10 +57,12 @@ int write_prom(int fd, Chip *chip, char *file)
 		cmd[1]=chip->wcmd[1];
 		cmd[2]=(n==256)?0:n;		// n bytes to write (0 for 256)
 		for(i=0;i<chip->naddr;i++)
-			cmd[i]=adr[i];			// specify start address
+			cmd[i+3]=adr[i];			// specify start address
 
 		if(*send(fd,cmd,offset+n,1)!='O')	// write data to EEPROM
 			return 1;				
+
+		free(cmd);
 		address+=n;					// increment address
 	}
 	fclose(fp);

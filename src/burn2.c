@@ -59,6 +59,8 @@ int main(int argc, char *argv[])
 	int rflag = 0;
 	int wflag = 0;
 	int eflag = 0;
+	int aflag = 0;
+	int addr1,addr2;		// address range
 	char *chipstr = NULL;
 	char *device_file = NULL;
 	char *read_file = NULL;
@@ -66,10 +68,14 @@ int main(int argc, char *argv[])
 	Chip *chip = NULL;		// chipdata struct
 
 	// Get args
-	while((c = getopt(argc, argv, "d:c:r:w:e")) != -1)
+	while((c = getopt(argc, argv, "a:d:c:r:w:e")) != -1)
 	{
 		switch(c)
 		{
+			case 'a':
+				sscanf(optarg, "%x-%x", &addr1, &addr2);
+				aflag = 1;
+				break;
 			case 'd':
 				device_file = optarg;
 				break;
@@ -97,9 +103,29 @@ int main(int argc, char *argv[])
 		help("You must specify a chip type.");
 	if((chip=chip_select(chipstr))==NULL)
 		die("Invalid chip type '%s'",chipstr);
-	
+
+	// Validate or default address range if none specified
+	if(aflag)
+	{
+		if((addr1>addr2) || (addr1<0) || (addr2>chip->size))
+			help("Invalid address range specified.");	
+	}
+	else
+	{
+		addr1=0;
+		addr2=chip->size;
+	}
+
 	// Configure the serial port and perform requested action
 	if((fd=config(device_file))==-1) return 1;
+
+	if(eflag)
+	{
+		if(erase_prom(fd, chip)>0)
+			die("Error erasing device.");
+		else
+			printf("Sucesfully erased the chip!\n");
+	}
 
 	if(rflag)
 	{
@@ -115,14 +141,8 @@ int main(int argc, char *argv[])
 		else
 			printf("Sucessfully wrote to the chip!\n");
 	}
-	else if(eflag)
-	{
-		if(erase_prom(fd, chip)>0)
-			die("Error erasing device.");
-		else
-			printf("Sucessfully erased the chip!\n");
-	}
-	else
+	else if(!eflag)
 		help("No action specified.\n");
+
 	return 0;
 }
