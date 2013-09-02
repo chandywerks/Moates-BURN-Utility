@@ -24,7 +24,7 @@ void help(char *errmsg, ...)
 	va_end(va);
 	printf
 	(
-		"\n\nDriver for the Moates BURN EEPROM burner.\n"
+		"\n\nDriver for the Moates BURN II EEPROM burner.\n"
 		"Arguments\n"
 		"\t-d FILE\n\t\tSpecify a device file, defaults to /dev/ttyUSB0\n\n"
 		"\t-c WORD\n\t\tSpecify the chip type, supported ships are...\n"
@@ -38,6 +38,12 @@ void help(char *errmsg, ...)
 		"\t\tSpecify a file to write to the EEPROM\n\n"
 		"\t-e\n\t\t"
 		"Erase contents of the EEPROM\n"
+		"\t-a\n\t\t"
+		"Address range (defaut is 0 to max chip size) to read or write at\n\t\t"
+		"Format: 0x0-0xFFFF\n\n"
+		"\t-o\n\t\t"
+		"Address offset (default is 0) to start reading or writing at\n\t\t"
+		"Format: 0xFF\n\n"
 	);
 	exit(0);
 }
@@ -54,27 +60,32 @@ void die(char *errmsg, ...)
 int main(int argc, char *argv[])
 {
 	p_name=argv[0];
+
 	int fd;	// File descriptor
 	int c;
-	int rflag = 0;
-	int wflag = 0;
-	int eflag = 0;
-	int aflag = 0;
-	int addr1,addr2;		// address range
+	int rflag, wflag, eflag, aflag, oflag;	// Argument flags
+	int addr1, addr2;		// address range
+
 	char *chipstr = NULL;
 	char *device_file = NULL;
 	char *read_file = NULL;
 	char *write_file = NULL;
+
 	Chip *chip = NULL;		// chipdata struct
 
+	rflag=wflag=eflag=aflag=oflag=0;
 	// Get args
-	while((c = getopt(argc, argv, "a:d:c:r:w:e")) != -1)
+	while((c = getopt(argc, argv, "a:o:d:c:r:w:e")) != -1)
 	{
 		switch(c)
 		{
 			case 'a':
 				sscanf(optarg, "%x-%x", &addr1, &addr2);
 				aflag = 1;
+				break;
+			case 'o':
+				sscanf(optarg, "%x", &addr1);
+				oflag = 1;
 				break;
 			case 'd':
 				device_file = optarg;
@@ -94,6 +105,7 @@ int main(int argc, char *argv[])
 				eflag = 1;
 				break;
 			case '?':
+				help("");
 				return 1;
 		}
 	}
@@ -104,20 +116,24 @@ int main(int argc, char *argv[])
 	if((chip=chip_select(chipstr))==NULL)
 		die("Invalid chip type '%s'",chipstr);
 
-	// Validate or default address range if none specified
+	// Validate and set sepcified address range or offset or default to entire chip with offset 0
 	if(aflag)
 	{
 		if((addr1>addr2) || (addr1<0) || (addr2>chip->size))
-			help("Invalid address range specified.");	
+			help("Invalid address range specified.");
+		chip->offset=addr1;
+		chip->size=addr2;
 	}
-	else
+	else if(oflag)
 	{
-		addr1=0;
-		addr2=chip->size;
+		if(addr1<0 || addr1>chip->size)
+			help("Invalid offset specified. Must be a value between 0x0 and 0x%X", chip->size);
+		chip->offset=addr1;
 	}
 
 	// Configure the serial port and perform requested action
-	if((fd=config(device_file))==-1) return 1;
+	if((fd=config(device_file))==-1)
+		return 1;
 
 	if(eflag)
 	{
