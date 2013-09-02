@@ -16,12 +16,7 @@ int read_prom(int fd, Chip *chip, char *file)
 }
 int write_prom(int fd, Chip *chip, char *file)
 {
-	// TODO at the moment this only works for burning an SST 27SF512
-	// we need to put chip data, like size and header command / length, 
-	// in a data structure and refrence that instead so this process will work
-	// for any given chip.
-
-	int address=0;	// Starting address
+	int address=chip->offset;	// Starting address
 	int offset;		// cmd data offset
 	int i;			// bytes to read and general purpose counter
 	int n;			// n bytes to write
@@ -38,7 +33,6 @@ int write_prom(int fd, Chip *chip, char *file)
 
 	offset=3+chip->naddr;	// Command header + n bytes for address
 
-	// TODO - allow user to specify an address range to write to
 	while(address<=chip->size)
 	{
 		i=(chip->size-address>=256)?256:chip->size-address;	// n bytes to read
@@ -83,9 +77,7 @@ int erase_prom(int fd, Chip *chip)
 		return 1;
 	}
 	else
-	{
 		return (*send(fd,chip->ecmd,2,1))=='O'?0:1;
-	}
 }
 char * addrstr(int address, int n)
 {
