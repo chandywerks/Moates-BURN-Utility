@@ -12,6 +12,39 @@ supported by the BURNII.
 
 int read_prom(int fd, Chip *chip, char *file)
 {
+	int address=chip->offset;	// Starting address
+	int offset;					// cmd data offset
+	int i;						// Counter
+	int n;						// n bytes to read from chip
+	char *cmd;					// Command string
+	char *adr;
+
+	FILE *fp;
+	fp=fopen(file,"w");
+	if(fp==NULL)
+		die("Unable to write to file: %s\n",file);
+
+	offset=3+chip->naddr;		// Command header + n bytes of address	
+
+	// Generate command string
+	cmd=malloc(sizeof(char)*offset);
+	cmd[0]=chip->rcmd[0];
+	cmd[1]=chip->rcmd[1];
+
+	while(address<=chip->size)
+	{
+		n=(chip->size-address>=256)?256:chip->size-address;	// n bytes to read from chip
+		
+		// Generate command string to read n bytes from chip
+		adr=addrstr(address,chip->naddr);
+		cmd[2]=(n==256)?0:n;
+		for(i=0;i<chip->naddr;i++)
+			cmd[i+3]=adr[i];	
+
+		fwrite(send(fd,cmd,offset,n),sizeof(char),n,fp);// Write data to file
+		address+=n;	// Increment address
+	}
+	free(cmd);
 	return 0;
 }
 int write_prom(int fd, Chip *chip, char *file)
@@ -29,13 +62,13 @@ int write_prom(int fd, Chip *chip, char *file)
 	fp=fopen(file,"r");
 	if(fp==NULL)
 		die("Unable to read from file: %s\n",file);
+	
 	buf=malloc(sizeof(char)*256);
-
 	offset=3+chip->naddr;	// Command header + n bytes for address
 
 	while(address<=chip->size)
 	{
-		i=(chip->size-address>=256)?256:chip->size-address;	// n bytes to read
+		i=(chip->size-address>=256)?256:chip->size-address;	// n bytes to read from file
 		// Read at most 256 bytes or until EOF from file
 		if((n=fread(buf,sizeof(char),i,fp))==0)
 			break;

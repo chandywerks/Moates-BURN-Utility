@@ -19,11 +19,8 @@ char * send(int fd, char *cmd, int n_write, int n_read)
 	int i;
 	
 	for(i=0;i<n_write;i++)
-	{
-		new_cmd[i]=cmd[i];
-		sum+=cmd[i];
-	}
-	new_cmd[n_write++]=sum;
+		sum+=new_cmd[i]=cmd[i];	// Calculate checksum & copy input data to new buffer
+	new_cmd[n_write++]=sum;		// Tack on checksum
 
 	if(write(fd,new_cmd,n_write) != n_write)		// Send command
 		die("Error writing to the device.");
