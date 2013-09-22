@@ -135,14 +135,6 @@ int main(int argc, char *argv[])
 	if((fd=config(device_file))==-1)
 		return 1;
 
-	if(eflag)
-	{
-		if(erase_prom(fd, chip)>0)
-			die("Error erasing device.");
-		else
-			printf("Sucesfully erased the chip!\n");
-	}
-
 	if(rflag)
 	{
 		if(read_prom(fd, chip, read_file)>0)
@@ -157,7 +149,14 @@ int main(int argc, char *argv[])
 		else
 			printf("Sucessfully wrote to the chip!\n");
 	}
-	else if(!eflag)
+	else if(eflag)
+	{
+		if(erase_prom(fd, chip)>0)
+			die("Error erasing device.");
+		else
+			printf("Sucesfully erased the chip!\n");
+	}
+	else
 		help("No action specified.\n");
 
 	return 0;

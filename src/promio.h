@@ -21,6 +21,6 @@ extern int read_prom(int fd, Chip *chip, char *file);
 extern int write_prom(int fd, Chip *chip, char *file);
 extern int erase_prom(int fd, Chip *chip);
 
-static char * addrstr(int address, int n);
+static char *addrstr(int address, int n);
 
 #endif

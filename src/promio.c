@@ -31,7 +31,7 @@ int read_prom(int fd, Chip *chip, char *file)
 	cmd[0]=chip->rcmd[0];
 	cmd[1]=chip->rcmd[1];
 
-	while(address<=chip->size)
+	while(address<chip->size)
 	{
 		n=(chip->size-address>=256)?256:chip->size-address;	// n bytes to read from chip
 		
@@ -41,10 +41,12 @@ int read_prom(int fd, Chip *chip, char *file)
 		for(i=0;i<chip->naddr;i++)
 			cmd[i+3]=adr[i];	
 
-		fwrite(send(fd,cmd,offset,n),sizeof(char),n,fp);// Write data to file
+		fwrite(send(fd,cmd,offset,n),sizeof(char),n,fp); // Write data to file
+
 		address+=n;	// Increment address
 	}
 	free(cmd);
+
 	return 0;
 }
 int write_prom(int fd, Chip *chip, char *file)
@@ -65,6 +67,9 @@ int write_prom(int fd, Chip *chip, char *file)
 	
 	buf=malloc(sizeof(char)*256);
 	offset=3+chip->naddr;	// Command header + n bytes for address
+
+	if(erase_prom(fd, chip)>0)	// Erase the chip before writing
+		return 1;	
 
 	while(address<=chip->size)
 	{
@@ -112,7 +117,7 @@ int erase_prom(int fd, Chip *chip)
 	else
 		return (*send(fd,chip->ecmd,2,1))=='O'?0:1;
 }
-char * addrstr(int address, int n)
+char *addrstr(int address, int n)
 {
 	char *str=malloc(sizeof(char)*n);
 	int i;

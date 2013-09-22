@@ -10,7 +10,7 @@ the BURNII and sending/reciving commands.
 
 #include "burnio.h"
 
-char * send(int fd, char *cmd, int n_write, int n_read)
+char *send(int fd, char *cmd, int n_write, int n_read)
 {
 	// Sends a command and returns response data
 	char *response=malloc(sizeof(char)*n_read);
@@ -24,8 +24,11 @@ char * send(int fd, char *cmd, int n_write, int n_read)
 
 	if(write(fd,new_cmd,n_write) != n_write)		// Send command
 		die("Error writing to the device.");
-	if(read(fd,response,n_read) != n_read)
-		die("Error reading response from device");
+
+	i=0;
+	while(i<n_read)									// Read response
+		if((i+=read(fd,response+i,n_read-i))<=0)
+			die("Error writing to the device.");
 
 	return response;
 }
