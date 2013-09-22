@@ -27,7 +27,7 @@ char *send(int fd, char *cmd, int n_write, int n_read)
 
 	i=0;
 	while(i<n_read)									// Read response
-		if((i+=read(fd,response+i,n_read-i))<=0)
+		if((i+=read(fd,response+i,n_read))<=0)
 			die("Error writing to the device.");
 
 	return response;
