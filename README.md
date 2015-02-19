@@ -1,7 +1,7 @@
 Moates BURN Driver
 =========
 
-Linux drivers for the Moates BURN II EEPROM burner.
+Linux utility for the Moates BURN II EEPROM burner.
 
 Arguments
 ---------

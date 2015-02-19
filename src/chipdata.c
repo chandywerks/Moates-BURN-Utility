@@ -10,8 +10,7 @@ as chip size and command headers.
 
 #include "chipdata.h"
 
-Chip SST27SF512 = (Chip)
-{
+Chip SST27SF512 = (Chip) {
 	0,
 	0xFFFF,
 	2,
@@ -20,8 +19,7 @@ Chip SST27SF512 = (Chip)
 	"5E"
 };
 
-Chip AT29C256 = (Chip)
-{
+Chip AT29C256 = (Chip) {
 	0,
 	0x7FFF,
 	2,
@@ -30,8 +28,7 @@ Chip AT29C256 = (Chip)
 	"2E"
 };
 
-Chip AM29F040 = (Chip)
-{
+Chip AM29F040 = (Chip) {
 	0,
 	0x7FFFF,
 	3,
@@ -40,8 +37,7 @@ Chip AM29F040 = (Chip)
 	"4E"
 };
 
-Chip _2732A = (Chip)
-{
+Chip _2732A = (Chip) {
 	0,
 	0xFFF,
 	2,
@@ -50,15 +46,14 @@ Chip _2732A = (Chip)
 	"\0"
 };
 
-Chip *chip_select(char *str)
-{
-	if(!strcmp(str,"SST27SF512"))
+Chip *chip_select(char *str) {
+	if (!strcmp(str, "SST27SF512"))
 		return &SST27SF512;
-	else if(!strcmp(str,"AT29C256"))
+	else if (!strcmp(str, "AT29C256"))
 		return &AT29C256;
-	else if(!strcmp(str,"AM29F040"))
+	else if (!strcmp(str, "AM29F040"))
 		return &AM29F040;
-	else if(!strcmp(str,"2732A"))
+	else if (!strcmp(str, "2732A"))
 		return &_2732A;
 	else	
 		return NULL;
