@@ -22,7 +22,7 @@ void help(char *errmsg, ...) {
 	vprintf(errmsg, va);
 	va_end(va);
 	printf (
-		"\n\nDriver for the Moates BURN II EEPROM burner.\n"
+		"\n\nMoates BURN II EEPROM burner utility.\n"
 		"Arguments\n"
 		"\t-d FILE\n\t\tSpecify a device file, defaults to /dev/ttyUSB0\n\n"
 		"\t-c WORD\n\t\tSpecify the chip type, supported ships are...\n"

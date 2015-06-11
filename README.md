@@ -1,4 +1,4 @@
-Moates BURN Driver
+Moates BURN Utility
 =========
 
 Linux utility for the Moates BURN II EEPROM burner.
@@ -6,7 +6,7 @@ Linux utility for the Moates BURN II EEPROM burner.
 Arguments
 ---------
 
--d FILE 
+-d FILE
 > Specify a device file, defaults to `/dev/ttyUSB0`
 
 -c WORD
@@ -30,6 +30,6 @@ Arguments
 > Address range (default is 0 to max chip size) to read or write at
 > Format: 0x0-0xFFFF
 
--o 
+-o
 > Address offset (default is 0) to start reading or writing at
 > Format: 0xFF
